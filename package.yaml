@@ -1,0 +1,6 @@
+name: jle-singletons
+version: 0.0.0
+synopsis: Solutions to exercises in Justin Le's "Introduction to Singletons" series.
+source-dirs: src
+dependencies:
+  - singletons
