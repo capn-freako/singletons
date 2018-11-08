@@ -26,7 +26,7 @@ module Ex where
 
 import           Data.Kind
 import           Data.Singletons
-import           Data.Singletons.TH
+import           Data.Singletons.TH hiding (Foldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, sFoldr)
 import           Data.Singletons.Prelude.Ord
 import           Data.Void
 
@@ -34,25 +34,25 @@ import           Data.Void
 -- Replaces the more explicit definitions of: `DoorState`, `mergeState`, and
 --`mergeStateList` (as well as all their singleton friends) found further down
 -- (and, now, commented out).
--- $(singletons [d|
---   data DoorState = Opened | Closed | Locked
---     deriving (Show, Eq, Ord)
-
---   mergeState :: DoorState -> DoorState -> DoorState
---   mergeState = max
-
---   foldr :: (a -> b -> b) -> b -> [a] -> b
---   foldr _ z []     = z
---   foldr f z (x:xs) = f x (foldr f z xs)
-
---   mergeStateList :: [DoorState] -> DoorState
---   mergeStateList = foldr mergeState Opened
---   |])
-
 $(singletons [d|
   data DoorState = Opened | Closed | Locked
     deriving (Show, Eq, Ord)
+
+  mergeState :: DoorState -> DoorState -> DoorState
+  mergeState = max
+
+  foldr :: (a -> b -> b) -> b -> [a] -> b
+  foldr _ z []     = z
+  foldr f z (x:xs) = f x (foldr f z xs)
+
+  mergeStateList :: [DoorState] -> DoorState
+  mergeStateList = foldr mergeState Opened
   |])
+
+-- $(singletons [d|
+--   data DoorState = Opened | Closed | Locked
+--     deriving (Show, Eq, Ord)
+--   |])
 
 data Door (s :: DoorState) = UnsafeMkDoor { doorMaterial :: String }
   deriving (Show)
@@ -497,10 +497,10 @@ data Hallway :: [DoorState] -> Type where
 infixr 5 :<#
 
 -- See new consolidated definition near top of code.
-$(singletons [d|
-  mergeState :: DoorState -> DoorState -> DoorState
-  mergeState = max
-  |])
+-- $(singletons [d|
+--   mergeState :: DoorState -> DoorState -> DoorState
+--   mergeState = max
+--   |])
 
 mergeDoor
     :: Door s
@@ -513,12 +513,12 @@ mergeSomeDoor (MkSomeDoor s d) (MkSomeDoor t e) =
     MkSomeDoor (sMergeState s t) (mergeDoor d e)
     
 -- See new consolidated definition near top of code.
-$(singletons [d|
-  mergeStateList :: [DoorState] -> DoorState
-  mergeStateList []     = Opened               -- ^ the identity of mergeState
-  mergeStateList (s:ss) = s `mergeState` mergeStateList ss
-  -- mergeStateList = foldr mergeState Opened
-  |])
+-- $(singletons [d|
+--   mergeStateList :: [DoorState] -> DoorState
+--   mergeStateList []     = Opened               -- ^ the identity of mergeState
+--   mergeStateList (s:ss) = s `mergeState` mergeStateList ss
+--   -- mergeStateList = foldr mergeState Opened
+--   |])
 
 -- data TyFun a b
 -- type a ~> b = TyFun a b -> Type
