@@ -589,3 +589,15 @@ $(singletons [d|
   fold (x:xs) = x <> fold xs
   |])
 
+collapseHallway'
+    :: Hallway ss
+    -> Door (Fold ss)
+collapseHallway' HEnd       = UnsafeMkDoor "End of Hallway"
+collapseHallway' (d :<# ds) = d `mergeDoor` collapseHallway' ds
+
+-- It looks like `SomeHallway` is the object of Ex. 6.
+-- collapseSomeHallway' :: SomeHallway -> SomeDoor
+-- collapseSomeHallway' (ss :&: d) =
+--         sFold ss
+--     :&: collapseHallway' d
+
