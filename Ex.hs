@@ -25,9 +25,12 @@
 module Ex where
 
 import           Data.Kind
+-- import           Data.Semigroup
 import           Data.Singletons
-import           Data.Singletons.TH hiding (Foldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, sFoldr)
+import           Data.Singletons.Prelude hiding (Foldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, sFoldr, SNil, SCons, Or, And, Id, Not, AndSym0, AndSym1, sAnd)
 import           Data.Singletons.Prelude.Ord
+import           Data.Singletons.TH hiding (Foldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, sFoldr, Fold, sFold)
+-- import           Data.Singletons.TypeLits
 import           Data.Void
 
 -- From the "Singletons to make things nicer" section of Lesson 4.
@@ -558,7 +561,7 @@ $(singletons [d|
 -- data MergeStateSym0 :: DoorState ~> DoorState ~> DoorState
 -- type instance Apply MergeStateSym0 s = MergeStateSym1 s
 --
--- data MergeStateSym1 :: DoorState -> DoorState ~> DoorState
+-- data MergeStateSym1 :: DoorState G-> DoorState ~> DoorState
 -- type instance Apply (MergeStateSym1 s) t = MergeState s t
 --
 -- type MergeStateSym2 s t = MergeState s t
@@ -571,3 +574,18 @@ $(singletons [d|
 collapseHallway :: Hallway ss -> Door (MergeStateList ss)
 collapseHallway HEnd       = mkDoor SOpened "End of Hallway"
 collapseHallway (d :<# ds) = d `mergeDoor` collapseHallway ds
+
+$(singletons [d|
+  instance Semigroup DoorState where
+      (<>) = mergeState
+  instance Monoid DoorState where
+      mempty  = Opened
+      mappend = (<>)
+  |])
+
+$(singletons [d|
+  fold :: Monoid b => [b] -> b
+  fold []     = mempty
+  fold (x:xs) = x <> fold xs
+  |])
+
