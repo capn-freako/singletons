@@ -27,7 +27,7 @@ import           Data.Singletons
 import           Data.Singletons.Prelude hiding    (And, Or, sFoldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, Foldr)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding         (sFoldr, FoldrSym0, FoldrSym1, FoldrSym2, FoldrSym3, Foldr, sFold, Fold)
--- import           Data.Singletons.TypeLits
+import           Data.Singletons.TypeLits
 
 $(singletons [d|
   data DoorState = Opened | Closed | Locked
@@ -191,3 +191,30 @@ mkKnockableDoor s mat =
   ss :&: (s, mkDoor ss mat)
  where
   ss = sing @s
+
+-- Ex. 4.4
+data IsHalfOf :: Nat -> Nat ~> Type
+type instance Apply (IsHalfOf n) m = n :~: (m * 2)
+
+type IsEven n = Sigma Nat (IsHalfOf n)
+
+tenIsEven :: IsEven 10
+tenIsEven = SNat @5 :&: Refl @10
+    -- Refl is the constructor of type n :~: (m * 2)
+    -- here, we use it as Refl @10 :: 10 :~: 10
+
+-- won't compile
+-- sevenIsEven :: IsEven 7
+-- sevenIsEven = SNat @4 :&: Refl
+    -- won't compile, because we need something of type `(4 * 2) :~: 7`,
+    -- but Refl must have type `a :~: a`; `8 :~: 7` is not constructable
+    -- using `Refl`.  Neither `Refl @8` nor `Refl @7` will work.
+
+data HasRem :: Nat ~> Type
+
+type instance Apply HasRem n = 1 :~: (Rem n 2)
+
+type IsOdd n = Sigma Nat HasRem
+
+sevenIsOdd :: IsOdd 7
+sevenIsOdd = SNat @7 :&: Refl @1
