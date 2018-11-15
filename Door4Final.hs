@@ -218,3 +218,94 @@ type IsOdd n = Sigma Nat HasRem
 
 sevenIsOdd :: IsOdd 7
 sevenIsOdd = SNat @7 :&: Refl @1
+
+-- Ex. 4.5
+-- Directly implement a type-level Map, with kind (j ~> k) -> [j] -> [k], in terms of Foldr:
+-- type Map f xs = Foldr ???? ???? xs
+--
+-- type family Foldr (f :: j ~> k ~> k) (z :: k) (xs :: [j]) :: k where
+--     Foldr f z '[]       = z
+--     Foldr f z (x ': xs) = (f @@ x) @@ Foldr f z xs
+--
+-- type TyCon2 = (TyCon :: (k1 -> k2 -> k3) -> k1 ~> (k2 ~> k3))
+--
+-- (:.) :: (b ~> c) -> (a ~> b) -> a -> c
+-- (:)  :: a -> [a] -> [a]
+-- TyCon2 (:) :: a ~> ([a] ~> [a])
+-- TyCon2 (:) :. (f :: j ~> k) :: j -> ([k] ~> [k])
+-- TyCon3 (:.) :: (b ~> k4) ~> ((k3 ~> b) ~> (k3 ~> k4))
+-- TyCon3 (:.) @@ TyCon2 (:) :: (k3 ~> b) ~> (k3 ~> ([b] ~> [b]))
+-- type Map (f :: j ~> k) (xs :: [j]) = Foldr (TyCon1 (TyCon2 (:) :. f)) '[] xs
+-- type Map (f :: j ~> k) (xs :: [j]) =
+--   Foldr ((TyCon3 (:.)) @@ TyCon2 (:) @@ f) '[] xs
+--
+-- Justin's solution:
+type Map f xs = Foldr (TyCon2 (:) .@#@$$$ f) '[] xs
+
+-- From his *Singletons to make things nicer* section:
+--
+-- For operator names like ++, the naming convention is to have ++@#@$ be the completely unapplied defunctionalization symbol, ++@#@$$ be the type constructor that expects one argument before returning a defunctionalization symbol, ++@#@$$$ be the type constructor that takes two arguments before returning a defunctionalization symbol, etc.
+
+-- Ex. 4.6
+-- data Hallway :: [DoorState] -> Type where
+--     HEnd  :: Hallway '[]        -- ^ end of the hallway, a stretch with no
+--                                 --   doors
+--     (:<#) :: Door s
+--           -> Hallway ss
+--           -> Hallway (s ': ss)  -- ^ A door connected to a hallway is a new
+--                                 --   hallway, and we track the door's state
+--                                 --   in the list of hallway door states
+-- infixr 5 :<#
+--
+-- type SomeDoor    = Sigma DoorState   (TyCon1 Door)
+-- type SomeHallway = Sigma [DoorState] (TyCon1 Hallway)
+--
+-- type TyCon1 = (TyCon :: (k1 -> k2) -> k1 ~> k2)
+--
+-- data Sigma k :: (k ~> Type) -> Type where
+--     (:&:) :: Sing x -> (f @@ x) -> Sigma k f
+--
+-- SCons :: Sing n1 -> Sing n2 -> Sing (n1 : n2)
+mkSomeHallway :: [SomeDoor] -> SomeHallway
+mkSomeHallway [] = SNil :&: HEnd
+mkSomeHallway (sd : sds) = case sd of
+  (s :&: d) -> case mkSomeHallway sds of
+    (ss :&: ds) -> (SCons s ss) :&: (d :<# ds)
+         
+-- Note: when working with singletons, it is very important to use the
+--       extra power of `case` pattern matching!
+--
+-- For instance, this won't work:
+--
+-- mkSomeHallway ((s :&: d) : sds) =
+--   (SCons s ss) :&: (d :<# ds)
+--  where
+--   (ss :&: ds) = mkSomeHallway sds
+--
+-- yielding the following compiler error:
+--
+-- <- 
+--        • Couldn't match type ‘fst1’ with ‘n20’
+--          ‘fst1’ is a rigid type variable bound by
+--            a pattern with constructor:
+--              :&: :: forall s (a :: s ~> *) (fst :: s).
+--                     Sing fst -> (a @@ fst) -> Sigma s a,
+--            in
+-- <-  a pattern binding
+--            at /Users/a594349/Documents/Projects/HaskellMisc/singletons/Door4Final.hs:283:4-12
+--          Expected type: Sing n20
+--            Actual type: Sing fst1
+--        • In the pattern: ss :&: ds
+--          In a pattern binding: (ss :&: ds) = mkSomeHallway sds
+   
+-- <-       In an equation for ‘mkSomeHallway’:
+--              mkSomeHallway ((s :&: d) : sds)
+--                = (SCons s ss) :&: (d :<# ds)
+--                where
+--                    (ss :&: ds) = mkSomeHallway sds
+--        |
+--    283 |   (ss :&: ds) = mkSomeHallway sds
+--        |    ^^
+--    Fai
+-- <- led, no modules loaded.
+--    
