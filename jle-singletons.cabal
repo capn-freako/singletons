@@ -18,6 +18,11 @@ library
   exposed-modules: Ex
   build-depends: base
                , singletons
+               , vector
+               , ghc-typelits-natnormalise
+               , keys
+               , finite-typelits
+               , transformers
   default-language: Haskell2010
 
 -- executable dummy
