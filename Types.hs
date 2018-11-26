@@ -80,29 +80,27 @@ instance MonadTrans ContT where
 --
 -- 2) lift (m >>= f) = lift m >>= (lift . f)
 --
--- lift (m >>= f)                            =  {definition of lift@ContT}
--- ContT $ m >>= f >>= \y -> return (pure y) =  {definition of composition}
--- ContT $ m >>= f >>= return . pure
+-- lift (m >>= f)                                             =  {definition of lift@ContT}
+-- ContT $ m >>= f >>= return . pure                          =  {eta expansion}
 
--- (I'm stuck here, trying to connect the above and below.)
+-- Stuck here. How to get `runContT . ContT`, for elimination?
 
--- ContT $ m >>= runContT . (\x -> (ContT (f x >>= return . pure)))
---                                                            =  {eta expansion}
--- ContT $ m >>= \z -> runContT $ (\x -> (ContT (f x >>= return . pure))) z
---                                                            =  {function application}
--- ContT $ m >>= \z -> runContT $ (\x -> (ContT (f x >>= return . pure))) $ (\g -> g z) id
+-- ContT $ m >>= runContT . (ContT . f >>= return . pure)     =  {eta expansion}
+-- ContT $ m >>= \z -> runContT $ (ContT . f >>= return . pure) z
+--                                                            =  {rewriting `z`}
+-- ContT $ m >>= \z -> runContT $ (ContT . f >>= return . pure) $ (\g -> g z) id
 --                                                            =  {definition of pure@Cont}
--- ContT $ m >>= \z -> runContT $ (\x -> (ContT (f x >>= return . pure))) $ unCont (pure z) id
+-- ContT $ m >>= \z -> runContT $ (ContT . f >>= return . pure) $ unCont (pure z) id
 --                                                            =  {Monad laws (return x >>= f = f x)}
 -- ContT $ m >>= \z -> return (pure z) >>=
---   \y -> runContT $ (\x -> (ContT (f x >>= return . pure))) $ unCont y id
+--   \y -> runContT $ (ContT . f >>= return . pure) $ unCont y id
 --                                                            =  {definition of composition}
 -- ContT $ m >>= return . pure >>=
---   \y -> runContT $ (\x -> (ContT (f x >>= return . pure))) $ unCont y id
+--   \y -> runContT $ (ContT . f >>= return . pure) $ unCont y id
 --                                                            =  {definition of (>>=)@ContT}
 -- (ContT $ m >>= return . pure)
---        >>= (\x -> (ContT (f x >>= return . pure)))         =  {definition of lift@ContT}
--- lift m >>= (\x -> (ContT (f x >>= return . pure)))         =  {definition of composition}
--- lift m >>= (\x -> (ContT (f x >>= \y -> return (pure y)))) =  {definition of lift@ContT}
+--        >>= (ContT . f >>= return . pure)                   =  {definition of lift@ContT}
+-- lift m >>= (ContT . f >>= return . pure)                   =  {eta expansion}
+-- lift m >>= (\x -> ContT $ f x >>= return . pure)           =  {definition of lift@ContT}
 -- lift m >>= (\x -> lift (f x))                              =  {definition of composition}
 -- lift m >>= (lift . f)
