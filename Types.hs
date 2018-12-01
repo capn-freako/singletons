@@ -85,6 +85,9 @@ instance MonadTrans ContT where
 
 -- Stuck here. How to get `runContT . ContT`, for elimination?
 
+-- ContT $ m >>= runContT . (\x -> ContT $ f x >>= \y -> runContT $ return . pure $ unCont y id)
+-- ContT $ m >>= runContT . (\x -> ContT (f x) >>= return . pure)
+--                                                            =  {definition of composition}
 -- ContT $ m >>= runContT . (ContT . f >>= return . pure)     =  {eta expansion}
 -- ContT $ m >>= \z -> runContT $ (ContT . f >>= return . pure) z
 --                                                            =  {rewriting `z`}
@@ -96,11 +99,10 @@ instance MonadTrans ContT where
 --   \y -> runContT $ (ContT . f >>= return . pure) $ unCont y id
 --                                                            =  {definition of composition}
 -- ContT $ m >>= return . pure >>=
---   \y -> runContT $ (ContT . f >>= return . pure) $ unCont y id
+--   \y -> runContT $ (\x -> ContT $ f x >>= return . pure) $ unCont y id
 --                                                            =  {definition of (>>=)@ContT}
--- (ContT $ m >>= return . pure)
---        >>= (ContT . f >>= return . pure)                   =  {definition of lift@ContT}
--- lift m >>= (ContT . f >>= return . pure)                   =  {eta expansion}
+-- (ContT $ m >>= return . pure) >>= (\x -> ContT $ f x >>= return . pure)
+--                                                            =  {definition of lift@ContT}
 -- lift m >>= (\x -> ContT $ f x >>= return . pure)           =  {definition of lift@ContT}
 -- lift m >>= (\x -> lift (f x))                              =  {definition of composition}
 -- lift m >>= (lift . f)
